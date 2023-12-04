@@ -19,7 +19,7 @@ jobs:
           distribution: 'adopt'
           java-version: 17
           java-package: jdk
-          cache: 'maven'
+          cache: 'gradle'
 
       - uses: android-actions/setup-android@v3
         name: Setup Android SDK
