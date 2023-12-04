@@ -52,7 +52,7 @@ build-release: copy-external-deps
 	-PsqlcipherAndroidVersion="$(SQLCIPHER_ANDROID_VERSION)" \
 	assembleRelease
 
-deploy:
+deploy: build-release
 	$(GRADLE) \
 	-PpublishSnapshot=false \
 	-PpublishLocal=false \
@@ -62,7 +62,7 @@ deploy:
 	-PsqlcipherAndroidVersion="$(SQLCIPHER_ANDROID_VERSION)" \
 	sqlcipher:publish
 
-deploy-local:
+deploy-local: build-debug
 	$(GRADLE) \
 	-PpublishSnapshot=true \
 	sqlcipher:publishToMavenLocal
