@@ -1,0 +1,37 @@
+name: build
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - '*.*.*'
+
+jobs:
+  build_natives:
+    permissions:
+      contents: write
+    name: Build natives libraries
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/setup-java@v3
+        with:
+          distribution: 'adopt'
+          java-version: 17
+          java-package: jdk
+          cache: 'maven'
+
+      - uses: android-actions/setup-android@v3
+        name: Setup Android SDK
+        with:
+          packages: 'ndk;25.2.9519653'
+
+      - name: Source versions from VERSION file
+        run: cat VERSION >> $GITHUB_ENV
+
+      - name: Deploy version
+        env:
+          GLUON_NEXUS_USERNAME: ${{ secrets.GLUON_NEXUS_USERNAME }}
+          GLUON_NEXUS_PASSWORD: ${{ secrets.GLUON_NEXUS_PASSWORD }}
+        if: startsWith(github.ref, 'refs/tags/')
+        run: make deploy

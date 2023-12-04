@@ -39,8 +39,8 @@ project.ext {
         mavenReleaseRepositoryUrl = "outputs/release"
     } else {
         mavenLocalRepositoryPrefix = ""
-        mavenSnapshotRepositoryUrl = "https://oss.sonatype.org/content/repositories/snapshots"
-        mavenReleaseRepositoryUrl = "https://oss.sonatype.org/service/local/staging/deploy/maven2"
+        mavenSnapshotRepositoryUrl = "https://nexus.gluonhq.com/nexus/content/repositories/public-snapshots"
+        mavenReleaseRepositoryUrl = "https://nexus.gluonhq.com/nexus/content/repositories/releases"
     }
     if(project.hasProperty('publishSnapshot') && publishSnapshot.toBoolean()){
         mavenVersionName = "${libraryVersion}-SNAPSHOT"

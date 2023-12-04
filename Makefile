@@ -1,50 +1,68 @@
+include VERSION
+
+sqlite := sqlite-$(version)
+
+GRADLE = ./gradlew
+TARGET := build
+
+SQLITE_FLAGS := $($(target)_SQLITE_FLAGS)
+SQLITE_AMAL_PREFIX = sqlite-amalgamation-$(shell ./amalgamation_version.sh $(version))
+SQLITE_DST := sqlcipher/src/main/jni/sqlcipher
+
 .PHONY: clean build-debug build-release \
 	publish-snapshot-to-local-maven \
 	publish-snapshot-to-local-nexus
-GRADLE = ./gradlew
+
+SQLITE_OUT:=$(SQLITE_DST)/sqlite3.c
+SQLITE_ARCHIVE:=$(TARGET)/$(sqlite)-sqlcipher.zip
+SQLITE_UNPACKED:=$(TARGET)/sqlite-unpack.log
+
+$(SQLITE_ARCHIVE):
+	echo "Downloading Archive"
+	mkdir -p $(TARGET)
+	curl -SL "https://github.com/gluonhq/sqlcipher/releases/download/$(version)/sqlcipher-amal-$(version).zip" > $@
+	@mkdir -p $(@D)
+
+$(SQLITE_UNPACKED): $(SQLITE_ARCHIVE)
+	unzip -qo $< -d $(TARGET)
+	if [ -d "$(TARGET)/sqlcipher-$(version)" ] ; then mv $(TARGET)/sqlcipher-$(version) $(TARGET)/$(SQLITE_AMAL_PREFIX);fi
+	touch $@
+
+copy-sqlite: $(SQLITE_UNPACKED)
+	cp $(TARGET)/$(SQLITE_AMAL_PREFIX)/sqlite3.c $(SQLITE_DST)
+	cp $(TARGET)/$(SQLITE_AMAL_PREFIX)/sqlite3.h $(SQLITE_DST)
+
+copy-external-deps: copy-sqlite
+	cp -R external-dependencies/libcrypto sqlcipher/src/main/jni/sqlcipher/android-libs
+	cp -R external-dependencies/openssl-1.1.1t/include sqlcipher/src/main/jni/sqlcipher/android-libs
 
 clean:
 	-rm -rf build
+	-rm -f $(SQLITE_DST)/sqlite3.c
+	-rm -f $(SQLITE_DST)/sqlite3.h
+	-rm -rf $(SQLITE_DST)/android-libs
 	$(GRADLE) clean
 
-build-debug:
-	$(GRADLE) assembleDebug
+build-debug: copy-external-deps
+	$(GRADLE) \
+	assembleDebug
 
-build-release:
+build-release: copy-external-deps
 	$(GRADLE) \
 	-PsqlcipherAndroidVersion="$(SQLCIPHER_ANDROID_VERSION)" \
 	assembleRelease
 
-publish-snapshot-to-local-maven:
-	@ $(collect-signing-info) \
-	$(GRADLE) \
-	-PpublishSnapshot=true \
-	-Psigning.keyId="$$gpgKeyId" \
-	-Psigning.secretKeyRingFile="$$gpgKeyRingFile" \
-	-Psigning.password="$$gpgPassword" \
-	publishReleasePublicationToMavenLocal
-
-publish-remote-release:
-	@ $(collect-signing-info) \
-	$(collect-nexus-info) \
+deploy:
 	$(GRADLE) \
 	-PpublishSnapshot=false \
 	-PpublishLocal=false \
 	-PdebugBuild=false \
-	-PsigningKeyId="$$gpgKeyId" \
-	-PsigningKeyRingFile="$$gpgKeyRingFile" \
-	-PsigningKeyPassword="$$gpgPassword" \
-	-PnexusUsername="$$nexusUsername" \
-	-PnexusPassword="$$nexusPassword" \
+	-PnexusUsername="${GLUON_NEXUS_USERNAME}" \
+	-PnexusPassword="${GLUON_NEXUS_PASSWORD}" \
 	-PsqlcipherAndroidVersion="$(SQLCIPHER_ANDROID_VERSION)" \
 	sqlcipher:publish
 
-collect-signing-info := \
-	read -p "Enter GPG signing key id:" gpgKeyId; \
-	read -p "Enter full path to GPG keyring file \
-	(possibly ${HOME}/.gnupg/secring.gpg)" gpgKeyRingFile; stty -echo; \
-	read -p "Enter GPG password:" gpgPassword; stty echo;
-
-collect-nexus-info := \
-	read -p "Enter Nexus username:" nexusUsername; \
-	stty -echo; read -p "Enter Nexus password:" nexusPassword; stty echo;
+deploy-local:
+	$(GRADLE) \
+	-PpublishSnapshot=true \
+	sqlcipher:publishToMavenLocal

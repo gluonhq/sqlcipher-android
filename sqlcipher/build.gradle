@@ -82,7 +82,7 @@ def isReleaseBuild() {
 
 def getReleaseRepositoryUrl() {
     return hasProperty('mavenReleaseRepositoryUrl') ? mavenReleaseRepositoryUrl
-            : "https://oss.sonatype.org/service/local/staging/deploy/maven2/"
+            : "https://nexus.gluonhq.com/nexus/content/repositories/releases"
 }
 
 def getSnapshotRepositoryUrl() {
@@ -90,7 +90,7 @@ def getSnapshotRepositoryUrl() {
         return "${mavenLocalRepositoryPrefix}${buildDir}/${mavenSnapshotRepositoryUrl}"
     } else {
         return hasProperty('mavenSnapshotRepositoryUrl') ? mavenSnapshotRepositoryUrl
-                : "https://oss.sonatype.org/content/repositories/snapshots/"
+                : "https://nexus.gluonhq.com/nexus/content/repositories/public-snapshots"
     }
 }
 
@@ -114,7 +114,7 @@ afterEvaluate {
     publishing {
         publications {
             mavenJava(MavenPublication) {
-                groupId = "net.zetetic"
+                groupId = "com.gluonhq"
                 artifactId = "sqlcipher-android"
                 version = "${rootProject.ext.mavenVersionName}"
                 from components.release
